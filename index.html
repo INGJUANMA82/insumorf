@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Histórico Clientes Insumos — ORF BIC</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#163E64">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hist. Insumos">
+<style>
+:root{
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --paper:#FFFFFF; --paper2:#F4F6F8; --ink:#1F2A33; --ink2:#5E6B78;
+  --line:#D9D9D9; --card:#FFFFFF;
+  --navy:#163E64; --title:#084F6A; --accent:#156082; --slate:#8599AA;
+  --green:#2F6B4F; --amber:#C9A227; --alert:#C00000;
+  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 10px 28px -18px rgba(8,79,106,.28);
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:var(--font); -webkit-font-smoothing:antialiased; margin:0;
+  padding:0 14px 40px; background:var(--paper2); color:var(--ink); }
+.num{ font-variant-numeric:tabular-nums; }
+
+.topbar{ background:#fff; color:var(--ink); margin:0 -14px 0; padding:12px 16px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px; position:sticky; top:0; z-index:30;
+  border-bottom:2px solid var(--line); }
+.topbar .ttl{ display:flex; flex-direction:column; line-height:1.15; }
+.topbar .ttl strong{ font-size:17px; font-weight:700; letter-spacing:.01em;
+  text-transform:uppercase; color:#104862; }
+.topbar .spacer{ flex:1; }
+.topbar .user-box{ text-align:right; font-size:11.5px; color:var(--ink2); line-height:1.3; }
+.topbar .user-box b{ color:var(--navy); font-size:12.5px; }
+.topbar .logout{ font-size:11px; color:var(--accent); cursor:pointer; text-decoration:underline; }
+
+.tabwrap{ position:sticky; top:62px; z-index:20; padding-top:8px; margin:0 -14px; background:var(--paper2); }
+.tabs{ display:flex; align-items:flex-end; gap:2px; padding:0 16px; flex-wrap:wrap;
+  border-bottom:2px solid var(--line); background:var(--paper2); }
+.tab{ font-size:14px; font-weight:500; padding:10px 16px; color:var(--ink2);
+  border-bottom:3px solid transparent; margin-bottom:-2px; cursor:pointer; user-select:none; }
+.tab.on{ color:var(--navy); font-weight:700; border-bottom-color:var(--navy); }
+
+main{ max-width:1500px; margin:0 auto; padding-top:16px; }
+.view{ display:none; }
+.view.on{ display:block; }
+
+.banner{ background:#FFF8E1; border:1px solid #E6CF82; color:#6B5420; border-radius:6px;
+  padding:12px 14px; font-size:12.5px; margin-bottom:16px; display:none; }
+.banner.on{ display:block; }
+
+.search-card{ background:var(--card); border:1px solid var(--line); border-radius:6px;
+  box-shadow:var(--shadow); padding:14px 16px; margin-bottom:16px; position:relative; }
+.search-row{ display:flex; flex-direction:column; gap:8px; }
+.search-row label{ font-size:12.5px; font-weight:600; color:var(--ink2); }
+#searchBox{ width:100%; font-family:inherit; font-size:15px; padding:10px 12px;
+  border:1.5px solid var(--line); border-radius:4px; color:var(--ink); }
+#searchBox:focus{ outline:none; border-color:var(--navy); }
+.suggest{ position:absolute; left:16px; right:16px; top:84px; background:#fff;
+  border:1px solid var(--line); border-top:none; border-radius:0 0 6px 6px;
+  box-shadow:var(--shadow); max-height:280px; overflow-y:auto; z-index:40; display:none; }
+.suggest.on{ display:block; }
+.suggest .opt{ padding:9px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid #F0F2F4; }
+.suggest .opt b{ color:var(--navy); display:block; }
+.suggest .opt span{ color:var(--ink2); font-size:12px; }
+.suggest .empty{ padding:12px; font-size:13px; color:var(--ink2); }
+
+.year-filter{ display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px;
+  border-top:1px solid var(--line); flex-wrap:wrap; }
+.year-filter label{ font-size:12.5px; font-weight:600; color:var(--ink2); }
+.year-filter select{ font-family:inherit; font-size:13px; padding:6px 8px; border:1.5px solid var(--line);
+  border-radius:4px; color:var(--ink); background:#fff; }
+.year-filter .reset{ font-size:11.5px; color:var(--accent); cursor:pointer; text-decoration:underline; }
+
+.client-head{ display:none; align-items:center; gap:12px; margin:4px 0 14px; flex-wrap:wrap; }
+.client-head.on{ display:flex; }
+.client-head .chip{ background:var(--navy); color:#fff; font-weight:700; font-size:12px;
+  padding:5px 10px; border-radius:20px; }
+.client-head h1{ font-size:16px; font-weight:700; color:var(--navy); margin:0; letter-spacing:-.01em; }
+
+.panels{ display:none; grid-template-columns:1fr; gap:14px; }
+.panels.on{ display:grid; }
+@media (min-width:900px){ .panels{ grid-template-columns:1fr 1fr; } }
+@media (min-width:1300px){ .panels{ grid-template-columns:1fr 1fr 1fr; } }
+
+.panel{ background:var(--card); border:1px solid var(--line); border-radius:6px;
+  box-shadow:var(--shadow); overflow:hidden; }
+.panel .phead{ color:#fff; font-size:11.5px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.03em; padding:8px 10px; }
+.panel .pbody{ overflow-x:auto; }
+
+table.hist{ width:100%; border-collapse:collapse; font-size:11px; }
+table.hist th, table.hist td{ padding:4px 6px; text-align:right; border-bottom:1px solid #EEF1F3; white-space:nowrap; }
+table.hist thead th{ background:var(--paper2); color:var(--ink2); font-weight:700; text-align:right; }
+table.hist thead th:first-child, table.hist td.rowlbl{ text-align:left; position:sticky; left:0;
+  background:var(--paper2); color:var(--ink); font-weight:600; z-index:2; }
+table.hist tbody tr.agg td{ font-weight:700; background:#EEF1F3; }
+table.hist tbody tr.agg td.rowlbl{ background:#E4E8EB; }
+table.hist tbody tr.sem td{ font-weight:600; background:#FAFBFC; color:var(--ink2); }
+table.hist tbody tr.sem td.rowlbl{ background:#F4F6F8; }
+
+.empty-state{ text-align:center; color:var(--ink2); font-size:13.5px; padding:40px 16px; }
+.note{ font-size:11px; color:var(--ink2); margin:14px 2px 0; text-align:right; }
+
+/* --- Archivos --- */
+.files-card{ background:var(--card); border:1px solid var(--line); border-radius:6px;
+  box-shadow:var(--shadow); padding:16px; margin-bottom:16px; }
+.files-card h2{ font-size:15px; color:var(--navy); margin:0 0 4px; }
+.files-card .hint{ font-size:12px; color:var(--ink2); margin:0 0 16px; }
+.file-row{ padding:10px 0; border-bottom:1px solid #EEF1F3; }
+.file-row:last-of-type{ border-bottom:none; }
+.file-row .flbl{ font-size:13px; font-weight:600; color:var(--ink); }
+.file-row .flsub{ font-size:10.5px; color:var(--ink2); display:block; font-weight:400; margin-bottom:6px; }
+.file-row input[type=file]{ width:100%; font-size:12px; }
+.file-row .fstatus{ font-size:11.5px; font-weight:600; margin-top:4px; }
+.file-row .fstatus.ok{ color:var(--green); }
+.file-row .fstatus.err{ color:var(--alert); }
+.actions-row{ display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+.btn{ font-family:inherit; font-size:13px; font-weight:600;
+  border:1.5px solid var(--navy); background:var(--navy); color:#fff;
+  padding:11px 18px; border-radius:4px; cursor:pointer; transition:.15s; }
+.btn.ghost{ background:transparent; color:var(--navy); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; }
+.log-box{ margin-top:14px; background:#0F2238; color:#CFE3F0; font-family:Consolas,monospace;
+  font-size:11.5px; padding:12px 14px; border-radius:6px; max-height:220px; overflow-y:auto; white-space:pre-wrap; display:none; }
+.log-box.on{ display:block; }
+
+/* --- Login --- */
+#loginOverlay{ position:fixed; inset:0; background:rgba(16,24,32,.6); display:flex;
+  align-items:center; justify-content:center; z-index:100; padding:16px; }
+.login-card{ background:#fff; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  padding:30px 26px; width:100%; max-width:340px; text-align:center; }
+.login-card h2{ font-size:17px; color:var(--navy); margin:0 0 4px; }
+.login-card .sub{ font-size:12px; color:var(--ink2); margin-bottom:18px; }
+.login-card input{ width:100%; font-family:inherit; font-size:14px; padding:10px 12px;
+  border:1.5px solid var(--line); border-radius:4px; margin-bottom:12px; }
+.login-card .btn{ width:100%; padding:11px; font-size:14px; }
+.login-card .err{ color:var(--alert); font-size:12px; margin-top:10px; min-height:16px; }
+body.locked main, body.locked .topbar .user-box, body.locked .tabwrap{ display:none; }
+</style>
+</head>
+<body class="locked">
+
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Histórico Clientes Insumos</h2>
+    <div class="sub">Ingrese sus credenciales para continuar</div>
+    <input id="loginUser" type="text" autocomplete="username" placeholder="Usuario">
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Clave">
+    <button class="btn" id="loginBtn">Ingresar</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="ttl"><strong>Histórico Clientes Insumos</strong></div>
+  <div class="spacer"></div>
+  <div class="user-box" id="userBox">
+    <div><b id="userNombre">—</b></div>
+    <div id="userCargo">—</div>
+    <div class="logout" id="logoutBtn">Cerrar sesión</div>
+  </div>
+</header>
+
+<div class="tabwrap">
+  <div class="tabs">
+    <div class="tab on" data-view="historico">Histórico</div>
+    <div class="tab" data-view="archivos">Archivos</div>
+  </div>
+</div>
+
+<main>
+
+  <div class="banner" id="firstRunBanner">
+    Primer uso: esta app todavía no tiene datos cargados en este dispositivo. Vaya a la pestaña
+    <b>Archivos</b>, cargue los 6 Excel (igual que en el computador) y presione "Procesar y guardar".
+    Los datos quedan guardados solo en este equipo, nunca se envían a internet.
+  </div>
+
+  <!-- ============ HISTÓRICO ============ -->
+  <section id="view-historico" class="view on">
+
+    <div class="search-card">
+      <div class="search-row">
+        <label for="searchBox">Buscar cliente (cédula/NIT o nombre)</label>
+        <input id="searchBox" type="text" autocomplete="off" placeholder="Escriba cédula/NIT o nombre...">
+      </div>
+      <div class="suggest" id="suggestBox"></div>
+
+      <div class="year-filter">
+        <label>Años</label>
+        <select id="yearFrom"></select>
+        <span>a</span>
+        <select id="yearTo"></select>
+        <span class="reset" id="yearReset">restablecer</span>
+      </div>
+    </div>
+
+    <div class="client-head" id="clientHead">
+      <div class="chip" id="clientId">—</div>
+      <h1 id="clientName">—</h1>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      Escriba un número de identificación o un nombre para ver el histórico del cliente.
+    </div>
+
+    <div class="panels" id="panels">
+      <div class="panel" id="panel-insumos"></div>
+      <div class="panel" id="panel-anticipos"></div>
+      <div class="panel" id="panel-cargos"></div>
+      <div class="panel" id="panel-cartera"></div>
+      <div class="panel" id="panel-paddypesos"></div>
+      <div class="panel" id="panel-paddytn"></div>
+    </div>
+
+    <div class="note" id="footNote"></div>
+  </section>
+
+  <!-- ============ ARCHIVOS ============ -->
+  <section id="view-archivos" class="view">
+    <div class="files-card">
+      <h2>Actualizar datos desde Excel</h2>
+      <p class="hint">Cargue los archivos fuente (los mismos nombres y hojas que en el computador). Todo el
+      procesamiento ocurre en este navegador; los datos quedan guardados <b>solo en el almacenamiento privado
+      de esta app en este dispositivo</b> (no hay descarga, no hay envío a internet, no quedan visibles en
+      los archivos del teléfono).</p>
+
+      <div class="file-row">
+        <div class="flbl">INSUMOS.ORFSA.xlsx<span class="flsub">hoja INSUMOS.PESOS.ORF</span></div>
+        <input type="file" id="f-insumos" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-insumos"></div>
+      </div>
+      <div class="file-row">
+        <div class="flbl">ANTICIPOS.ORFSA.xlsx<span class="flsub">hoja ANTICIPOS.PESOS.ORF</span></div>
+        <input type="file" id="f-anticipos" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-anticipos"></div>
+      </div>
+      <div class="file-row">
+        <div class="flbl">CARTERA.ORFSA.xlsx<span class="flsub">hoja CARTERA.ORF</span></div>
+        <input type="file" id="f-cartera" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-cartera"></div>
+      </div>
+      <div class="file-row">
+        <div class="flbl">PADDY.ORFSA.xlsx<span class="flsub">hojas PADDY.TN.NETO.ORF y PADDY.PESOS.ORF</span></div>
+        <input type="file" id="f-paddy" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-paddy"></div>
+      </div>
+      <div class="file-row">
+        <div class="flbl">TERCEROS.ORFSA.xlsx<span class="flsub">NIF → nombre / razón social</span></div>
+        <input type="file" id="f-terceros" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-terceros"></div>
+      </div>
+      <div class="file-row">
+        <div class="flbl">USUARIOS.ORFSA.xlsx<span class="flsub">usuarios y claves de ingreso</span></div>
+        <input type="file" id="f-usuarios" accept=".xlsx,.xls">
+        <div class="fstatus" id="s-usuarios"></div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn" id="btnProcesar">Procesar y guardar en este dispositivo</button>
+      </div>
+
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="./xlsx.full.min.js"></script>
+<script>
+/* ============== PWA: registrar service worker ============== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(console.error);
+  });
+}
+
+/* ============== IndexedDB ============== */
+const DB_NAME = 'historicoInsumosDB';
+const DB_VERSION = 1;
+const STORES = ['insumos','anticipos','cartera','paddy_pesos','paddy_tn','terceros','usuarios'];
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      STORES.forEach(s=>{ if(!db.objectStoreNames.contains(s)) db.createObjectStore(s); });
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGet(storeName, key){
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(storeName,'readonly');
+    const req = tx.objectStore(storeName).get(key);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbPut(storeName, key, value){
+  const db = await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction(storeName,'readwrite');
+    tx.objectStore(storeName).put(value, key);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
+/* ============== Estado de datos (en memoria, cargado desde IndexedDB) ============== */
+let DATA_INSUMOS={}, DATA_ANTICIPOS={}, DATA_CARTERA={}, DATA_PADDY_PESOS={}, DATA_PADDY_TN={}, DATA_TERCEROS={}, DATA_USUARIOS={};
+
+async function loadAllFromDB(){
+  DATA_INSUMOS      = (await idbGet('insumos','data'))      || {};
+  DATA_ANTICIPOS    = (await idbGet('anticipos','data'))    || {};
+  DATA_CARTERA      = (await idbGet('cartera','data'))      || {};
+  DATA_PADDY_PESOS  = (await idbGet('paddy_pesos','data'))  || {};
+  DATA_PADDY_TN     = (await idbGet('paddy_tn','data'))     || {};
+  DATA_TERCEROS     = (await idbGet('terceros','data'))     || {};
+  DATA_USUARIOS     = (await idbGet('usuarios','data'))     || {};
+}
+
+const START_YEAR = 2015;
+const YEARS = Array.from({length:12}, (_,i)=> START_YEAR + i);
+const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+
+const PANELS = [
+  { key:'insumos',    title:'INSUMOS (SEM, FER, AG) (*)',          color:'#163E64', agg:'sum', source:()=>DATA_INSUMOS },
+  { key:'anticipos',  title:'ANTICIPOS, SEGUROS, FLETES (*)',      color:'#C9731E', agg:'sum', source:()=>DATA_ANTICIPOS },
+  { key:'cargos',     title:'TOTAL CARGOS (*)',                     color:'#7B4B2A', agg:'sum', source: computeCargos },
+  { key:'cartera',    title:'SALDOS CAPITAL CARTERA AL CIERRE (*)', color:'#C00000', agg:'max', source:()=>DATA_CARTERA },
+  { key:'paddypesos', title:'PADDY VERDE EN PESOS (*)',             color:'#2F6B4F', agg:'sum', source:()=>DATA_PADDY_PESOS },
+  { key:'paddytn',    title:'PADDY VERDE EN TONELADAS',             color:'#1F4D36', agg:'sum', source:()=>DATA_PADDY_TN },
+];
+
+let currentClientId = null;
+let yearFrom = YEARS[0];
+let yearTo = YEARS[YEARS.length-1];
+
+function normalize(s){
+  return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+}
+function num(v, dec){
+  if (v==null || !isFinite(v)) return '—';
+  if (v===0) return '0';
+  return v.toLocaleString('es-CO',{minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function computeCargos(){
+  const out = {};
+  const ids = new Set([...Object.keys(DATA_INSUMOS), ...Object.keys(DATA_ANTICIPOS)]);
+  ids.forEach(id=>{
+    const a = DATA_INSUMOS[id] || {};
+    const b = DATA_ANTICIPOS[id] || {};
+    const yrs = new Set([...Object.keys(a), ...Object.keys(b)]);
+    const rec = {};
+    yrs.forEach(y=>{
+      const ra = a[y] || new Array(13).fill(0);
+      const rb = b[y] || new Array(13).fill(0);
+      const row = [];
+      for (let m=0;m<12;m++) row.push((ra[m]||0) + (rb[m]||0));
+      row.push(row.reduce((s,v)=>s+v,0));
+      rec[y] = row;
+    });
+    out[id] = rec;
+  });
+  return out;
+}
+
+/* ============== LOGIN ============== */
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+const loginBtn = document.getElementById('loginBtn');
+const loginErr = document.getElementById('loginErr');
+let currentUser = null;
+
+function unlockApp(rec){
+  currentUser = rec;
+  document.getElementById('userNombre').textContent = rec.nombre;
+  document.getElementById('userCargo').textContent = rec.cargo;
+  document.body.classList.remove('locked');
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
+function tryLogin(){
+  const u = normalize(loginUser.value).replace(/\s+/g,'');
+  const p = (loginPass.value||'').trim();
+  const rec = DATA_USUARIOS[u];
+  if (rec && String(rec.clave).trim() === p){
+    loginErr.textContent = '';
+    unlockApp(rec);
+  } else {
+    loginErr.textContent = 'Usuario o clave incorrectos.';
+  }
+}
+loginBtn.addEventListener('click', tryLogin);
+loginPass.addEventListener('keydown', (e)=>{ if (e.key==='Enter') tryLogin(); });
+loginUser.addEventListener('keydown', (e)=>{ if (e.key==='Enter') loginPass.focus(); });
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  currentUser = null;
+  loginUser.value=''; loginPass.value=''; loginErr.textContent='';
+  document.body.classList.add('locked');
+  document.getElementById('loginOverlay').style.display = 'flex';
+});
+
+/* ============== TABS ============== */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('view-'+t.getAttribute('data-view')).classList.add('on');
+  });
+});
+function goToTab(name){
+  document.querySelector(`.tab[data-view="${name}"]`).click();
+}
+
+/* ============== Filtro de años ============== */
+const selFrom = document.getElementById('yearFrom');
+const selTo = document.getElementById('yearTo');
+function initYearFilterUI(){
+  selFrom.innerHTML=''; selTo.innerHTML='';
+  YEARS.forEach(y=>{
+    selFrom.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+    selTo.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+  });
+  selFrom.value = yearFrom;
+  selTo.value = yearTo;
+}
+selFrom.addEventListener('change', ()=>{
+  yearFrom = parseInt(selFrom.value,10);
+  if (yearFrom > yearTo){ yearTo = yearFrom; selTo.value = yearTo; }
+  if (currentClientId) renderClient(currentClientId);
+});
+selTo.addEventListener('change', ()=>{
+  yearTo = parseInt(selTo.value,10);
+  if (yearTo < yearFrom){ yearFrom = yearTo; selFrom.value = yearFrom; }
+  if (currentClientId) renderClient(currentClientId);
+});
+document.getElementById('yearReset').addEventListener('click', ()=>{
+  yearFrom = YEARS[0]; yearTo = YEARS[YEARS.length-1];
+  selFrom.value = yearFrom; selTo.value = yearTo;
+  if (currentClientId) renderClient(currentClientId);
+});
+
+/* ============== Buscador ============== */
+const searchBox = document.getElementById('searchBox');
+const suggestBox = document.getElementById('suggestBox');
+let idx = [];
+function buildIndex(){
+  idx = Object.keys(DATA_TERCEROS).map(id=>({
+    id, name: DATA_TERCEROS[id], normName: normalize(DATA_TERCEROS[id])
+  }));
+}
+
+let hlIndex = -1;
+let currentOpts = [];
+
+searchBox.addEventListener('input', ()=>{
+  const q = normalize(searchBox.value);
+  hlIndex = -1;
+  if (!q){ suggestBox.classList.remove('on'); suggestBox.innerHTML=''; return; }
+  const byId = [];
+  const byName = [];
+  for (const row of idx){
+    if (row.id.indexOf(q)===0) byId.push(row);
+    else if (row.normName.indexOf(q)!==-1) byName.push(row);
+    if (byId.length+byName.length>60) break;
+  }
+  currentOpts = [...byId, ...byName].slice(0,15);
+  renderSuggest();
+});
+document.addEventListener('click', (e)=>{
+  if (!e.target.closest('.search-card')) suggestBox.classList.remove('on');
+});
+function renderSuggest(){
+  if (!currentOpts.length){
+    suggestBox.innerHTML = '<div class="empty">Sin coincidencias.</div>';
+    suggestBox.classList.add('on');
+    return;
+  }
+  suggestBox.innerHTML = currentOpts.map((o,i)=>
+    `<div class="opt" data-id="${o.id}"><b>${o.id}</b><span>${o.name}</span></div>`
+  ).join('');
+  suggestBox.classList.add('on');
+  suggestBox.querySelectorAll('.opt').forEach(el=>{
+    el.addEventListener('click', ()=> selectClient(el.getAttribute('data-id')));
+  });
+}
+function selectClient(id){
+  searchBox.value = DATA_TERCEROS[id] ? `${id} — ${DATA_TERCEROS[id]}` : id;
+  suggestBox.classList.remove('on');
+  currentClientId = id;
+  renderClient(id);
+}
+
+function renderClient(id){
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('clientHead').classList.add('on');
+  document.getElementById('panels').classList.add('on');
+  document.getElementById('clientId').textContent = id;
+  document.getElementById('clientName').textContent = DATA_TERCEROS[id] || 'Cliente no encontrado en TERCEROS';
+
+  PANELS.forEach(p=>{
+    const src = p.source();
+    const rec = src[id];
+    document.getElementById('panel-'+p.key).innerHTML = renderPanel(p, rec);
+  });
+
+  document.getElementById('footNote').textContent =
+    'Datos guardados localmente en este dispositivo. (*) Valores expresados en Millones de Pesos.';
+}
+
+function renderPanel(p, rec){
+  const cols = YEARS.filter(y => y>=yearFrom && y<=yearTo);
+  const monthVals = {};
+  cols.forEach(y=>{
+    const row = rec ? rec[String(y-START_YEAR)] : null;
+    monthVals[y] = row ? row.slice(0,12).map(v=>v||0) : new Array(12).fill(0);
+  });
+  let maxAbs = 0;
+  cols.forEach(y=> monthVals[y].forEach(v=> { if (Math.abs(v)>maxAbs) maxAbs = Math.abs(v); }));
+  function shade(v){
+    if (!maxAbs || !v) return '';
+    const frac = Math.min(Math.abs(v)/maxAbs, 1);
+    const alpha = (0.08 + frac*0.70).toFixed(2);
+    return `background-color:${hexToRgba(p.color, alpha)};`;
+  }
+  function aggFn(arr){
+    return p.agg==='max' ? Math.max(0, ...arr) : arr.reduce((s,v)=>s+v,0);
+  }
+  let head = '<tr><th>MES</th>' + cols.map(y=>`<th>${y}</th>`).join('') + '</tr>';
+  let bodyRows = '';
+  for (let m=0;m<12;m++){
+    bodyRows += `<tr><td class="rowlbl">${MESES[m]}</td>` +
+      cols.map(y=>`<td class="num" style="${shade(monthVals[y][m])}">${num(monthVals[y][m],0)}</td>`).join('') +
+      '</tr>';
+  }
+  const aggLabel = p.agg==='max' ? 'MAX' : 'TOTAL';
+  const aggRow = `<tr class="agg"><td class="rowlbl">${aggLabel}</td>` +
+    cols.map(y=>`<td class="num">${num(aggFn(monthVals[y]),0)}</td>`).join('') + '</tr>';
+  const semA = `<tr class="sem"><td class="rowlbl">SEM - A</td>` +
+    cols.map(y=>`<td class="num">${num(aggFn(monthVals[y].slice(0,6)),0)}</td>`).join('') + '</tr>';
+  const semB = `<tr class="sem"><td class="rowlbl">SEM - B</td>` +
+    cols.map(y=>`<td class="num">${num(aggFn(monthVals[y].slice(6,12)),0)}</td>`).join('') + '</tr>';
+  const tableHtml = `<div class="pbody"><table class="hist"><thead>${head}</thead><tbody>${bodyRows}${aggRow}${semA}${semB}</tbody></table></div>`;
+  return `<div class="phead" style="background:${p.color}">${p.title}</div>${tableHtml}`;
+}
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ============== ARCHIVOS: carga y guardado local (IndexedDB) ============== */
+const fileInputs = {
+  insumos:   {status:'s-insumos'},
+  anticipos: {status:'s-anticipos'},
+  cartera:   {status:'s-cartera'},
+  paddy:     {status:'s-paddy'},
+  terceros:  {status:'s-terceros'},
+  usuarios:  {status:'s-usuarios'},
+};
+function logLine(msg){
+  const box = document.getElementById('logBox');
+  box.classList.add('on');
+  box.textContent += msg + '\n';
+  box.scrollTop = box.scrollHeight;
+}
+function readFileAsArrayBuffer(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+}
+function pickSheet(wb, name){ return wb.Sheets[name] || wb.Sheets[wb.SheetNames[0]]; }
+
+function extractDataset(wb, sheetName){
+  const ws = pickSheet(wb, sheetName);
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const out = {};
+  let skipped = 0, total = 0;
+  for (let r=1; r<rows.length; r++){
+    const row = rows[r]; if (!row) continue;
+    const id = row[1], yr = row[2];
+    if (typeof id !== 'number' || typeof yr !== 'number'){ skipped++; continue; }
+    total++;
+    const idStr = String(Math.trunc(id));
+    const yOff = Math.trunc(yr) - START_YEAR;
+    if (yOff < 0) continue;
+    const vals = [];
+    for (let c=16; c<=28; c++){
+      let v = row[c];
+      if (typeof v !== 'number' || !isFinite(v)) v = 0;
+      vals.push(Math.round(v*100)/100);
+    }
+    if (!out[idStr]) out[idStr] = {};
+    out[idStr][String(yOff)] = vals;
+  }
+  return {data: out, skipped, total, clients: Object.keys(out).length};
+}
+function extractTerceros(wb){
+  const ws = pickSheet(wb, 'TERCEROS.ORF');
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const out = {};
+  for (let r=1; r<rows.length; r++){
+    const row = rows[r]; if (!row) continue;
+    const nif = row[1], name = row[2];
+    if (nif==null || name==null) continue;
+    const nifStr = String(nif).trim();
+    if (!nifStr) continue;
+    out[nifStr] = String(name).trim();
+  }
+  return {data: out, clients: Object.keys(out).length};
+}
+function extractUsuarios(wb){
+  const ws = pickSheet(wb, 'Hoja1');
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const out = {};
+  for (let r=1; r<rows.length; r++){
+    const row = rows[r]; if (!row) continue;
+    const usuario = row[0];
+    if (usuario==null || String(usuario).trim()==='') continue;
+    out[String(usuario).trim().toLowerCase()] = {
+      clave: String(row[2]??'').trim(),
+      nombre: String(row[3]??'').trim(),
+      cargo: String(row[4]??'').trim(),
+      correo: String(row[1]??'').trim()
+    };
+  }
+  return {data: out, clients: Object.keys(out).length};
+}
+function setStatus(key, ok, msg){
+  const el = document.getElementById(fileInputs[key].status);
+  el.textContent = msg;
+  el.className = 'fstatus ' + (ok?'ok':'err');
+}
+
+async function procesarArchivos(){
+  document.getElementById('logBox').textContent = '';
+  logLine('Iniciando procesamiento...');
+
+  const insumosFile = document.getElementById('f-insumos').files[0];
+  const anticiposFile = document.getElementById('f-anticipos').files[0];
+  const carteraFile = document.getElementById('f-cartera').files[0];
+  const paddyFile = document.getElementById('f-paddy').files[0];
+  const tercerosFile = document.getElementById('f-terceros').files[0];
+  const usuariosFile = document.getElementById('f-usuarios').files[0];
+
+  let usuariosCargadosAhora = false;
+
+  try{
+    if (insumosFile){
+      const wb = XLSX.read(await readFileAsArrayBuffer(insumosFile), {type:'array'});
+      const r = extractDataset(wb, 'INSUMOS.PESOS.ORF');
+      await idbPut('insumos','data', r.data);
+      DATA_INSUMOS = r.data;
+      setStatus('insumos', true, `Guardado: ${r.clients} clientes, ${r.skipped} filas omitidas`);
+      logLine(`INSUMOS: ${r.total} filas válidas, ${r.clients} clientes.`);
+    }
+    if (anticiposFile){
+      const wb = XLSX.read(await readFileAsArrayBuffer(anticiposFile), {type:'array'});
+      const r = extractDataset(wb, 'ANTICIPOS.PESOS.ORF');
+      await idbPut('anticipos','data', r.data);
+      DATA_ANTICIPOS = r.data;
+      setStatus('anticipos', true, `Guardado: ${r.clients} clientes, ${r.skipped} filas omitidas`);
+      logLine(`ANTICIPOS: ${r.total} filas válidas, ${r.clients} clientes.`);
+    }
+    if (carteraFile){
+      const wb = XLSX.read(await readFileAsArrayBuffer(carteraFile), {type:'array'});
+      const r = extractDataset(wb, 'CARTERA.ORF');
+      await idbPut('cartera','data', r.data);
+      DATA_CARTERA = r.data;
+      setStatus('cartera', true, `Guardado: ${r.clients} clientes, ${r.skipped} filas omitidas`);
+      logLine(`CARTERA: ${r.total} filas válidas, ${r.clients} clientes.`);
+    }
+    if (paddyFile){
+      const buf = await readFileAsArrayBuffer(paddyFile);
+      const wb = XLSX.read(buf, {type:'array'});
+      const rtn = extractDataset(wb, 'PADDY.TN.NETO.ORF');
+      const rpe = extractDataset(wb, 'PADDY.PESOS.ORF');
+      await idbPut('paddy_tn','data', rtn.data);
+      await idbPut('paddy_pesos','data', rpe.data);
+      DATA_PADDY_TN = rtn.data; DATA_PADDY_PESOS = rpe.data;
+      setStatus('paddy', true, `Guardado: TN ${rtn.clients} · $ ${rpe.clients} clientes`);
+      logLine(`PADDY TN: ${rtn.clients} clientes. PADDY PESOS: ${rpe.clients} clientes.`);
+    }
+    if (tercerosFile){
+      const wb = XLSX.read(await readFileAsArrayBuffer(tercerosFile), {type:'array'});
+      const r = extractTerceros(wb);
+      await idbPut('terceros','data', r.data);
+      DATA_TERCEROS = r.data;
+      setStatus('terceros', true, `Guardado: ${r.clients} registros`);
+      logLine(`TERCEROS: ${r.clients} registros.`);
+      buildIndex();
+    }
+    if (usuariosFile){
+      const wb = XLSX.read(await readFileAsArrayBuffer(usuariosFile), {type:'array'});
+      const r = extractUsuarios(wb);
+      await idbPut('usuarios','data', r.data);
+      DATA_USUARIOS = r.data;
+      usuariosCargadosAhora = true;
+      setStatus('usuarios', true, `Guardado: ${r.clients} usuarios`);
+      logLine(`USUARIOS: ${r.clients} usuarios.`);
+    }
+  } catch(err){
+    logLine('ERROR: ' + err.message);
+    console.error(err);
+  }
+
+  logLine('Listo. Los datos quedaron guardados en este dispositivo.');
+
+  if (usuariosCargadosAhora && document.body.classList.contains('locked') === false && currentUser === null){
+    document.getElementById('firstRunBanner').classList.remove('on');
+    logLine('Usuarios cargados. Vuelva a abrir la app para iniciar sesión, o recargue ahora.');
+  }
+}
+document.getElementById('btnProcesar').addEventListener('click', procesarArchivos);
+
+/* ============== Arranque ============== */
+(async function init(){
+  await loadAllFromDB();
+  buildIndex();
+  initYearFilterUI();
+
+  if (Object.keys(DATA_USUARIOS).length === 0){
+    // Primer uso: aún no hay usuarios guardados en este dispositivo.
+    document.body.classList.remove('locked');
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('userBox').style.display = 'none';
+    document.getElementById('firstRunBanner').classList.add('on');
+    goToTab('archivos');
+  }
+})();
+</script>
+</body>
+</html>
